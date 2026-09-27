@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>¿Qué es programar?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream: #F3F0E8;
+    --ink: #17140F;
+    --violet: #3B2ED9;
+    --violet-soft: #EDEBFB;
+    --wall: #C1432B;
+    --wall-soft: #F7E2DC;
+    --success: #2E8B57;
+    --success-soft: #E3F3E9;
+    --line: #D8D3C6;
+    --cell: #FFFFFF;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap{
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+  }
+  header{
+    display:flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 22px;
+    margin-bottom: 34px;
+  }
+  h1{
+    font-family: 'Baloo 2', 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: clamp(30px, 5vw, 46px);
+    margin: 0;
+    line-height: 1;
+    max-width: 480px;
+  }
+  .definition{
+    color: var(--violet);
+    font-weight: 700;
+    font-size: 17px;
+    line-height: 1.45;
+    max-width: 300px;
+    margin: 0;
+  }
+  .stage{
+    display: grid;
+    grid-template-columns: minmax(260px, 340px) 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  @media (max-width: 720px){
+    .stage{ grid-template-columns: 1fr; }
+  }
+  .board-panel{
+    background: var(--cell);
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .board-caption{
+    font-size: 13px;
+    color: #5c584c;
+    margin: 0 0 14px;
+  }
+  .board{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 6px;
+    aspect-ratio: 4 / 3;
+  }
+  .cell{
+    background: var(--violet-soft);
+    border-radius: 8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: clamp(20px, 4vw, 30px);
+    position: relative;
+    transition: background .2s ease;
+  }
+  .cell.wall{ background: var(--wall-soft); }
+  .cell.wall::after{ content:"⚠️"; opacity:.85; }
+  .cell.goal::after{ content:"☕"; }
+  .cell.active-robot{ background: #FFE9A8; }
+  .robot{
+    font-size: clamp(22px, 4.5vw, 32px);
+    transition: transform .25s ease;
+    display:inline-block;
+  }
+  .facing-up{ transform: rotate(0deg); }
+  .facing-right{ transform: rotate(90deg); }
+  .facing-down{ transform: rotate(180deg); }
+  .facing-left{ transform: rotate(270deg); }
+
+  .panel{
+    background: var(--cell);
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    padding: 22px;
+  }
+  .panel h2{
+    font-family: 'Baloo 2', 'Inter', sans-serif;
+    font-size: 20px;
+    margin: 0 0 6px;
+  }
+  .panel p.hint{
+    margin: 0 0 18px;
+    font-size: 14px;
+    color: #5c584c;
+    line-height: 1.5;
+  }
+  .commands{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  button{
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 10px;
+    border: 2px solid var(--ink);
+    background: #fff;
+    color: var(--ink);
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease;
+  }
+  button:hover:not(:disabled){ background: var(--violet-soft); }
+  button:active:not(:disabled){ transform: translateY(1px); }
+  button:disabled{ opacity: .45; cursor: not-allowed; }
+  button.primary{ background: var(--violet); color:#fff; border-color: var(--violet); }
+  button.primary:hover:not(:disabled){ background: #2f24b0; }
+  button.ghost{ background: transparent; }
+
+  .queue-label{
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: none;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .queue{
+    min-height: 52px;
+    border: 2px dashed var(--line);
+    border-radius: 10px;
+    padding: 10px;
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .queue:empty::before{
+    content: "Tu secuencia va a aparecer acá →";
+    color: #a39d8b;
+    font-size: 13px;
+    padding: 6px 2px;
+  }
+  .chip{
+    background: var(--violet-soft);
+    border: 1.5px solid var(--violet);
+    color: var(--violet);
+    border-radius: 999px;
+    padding: 6px 10px 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    transition: background .2s ease, transform .2s ease;
+  }
+  .chip.current{ background: #FFE9A8; border-color: #B8860B; color: #6b5300; transform: scale(1.06); }
+  .chip button{
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1;
+    color: inherit;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .actions{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .status{
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 24px;
+  }
+  .status.idle{ background: #F5F3EC; color: #5c584c; }
+  .status.success{ background: var(--success-soft); color: var(--success); font-weight: 600; }
+  .status.fail{ background: var(--wall-soft); color: var(--wall); font-weight: 600; }
+  .status.running{ background: var(--violet-soft); color: var(--violet); font-weight: 600; }
+
+  footer{
+    margin-top: 34px;
+    font-size: 13px;
+    color: #8a8474;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>¿Qué es programar?</h1>
+    <p class="definition">Es el arte de indicarle a una computadora lo que tiene que hacer, mediante un conjunto de instrucciones.</p>
+  </header>
+
+  <div class="stage">
+    <div class="board-panel">
+      <p class="board-caption">El robot solo hace lo que le decís. Nada más, nada menos.</p>
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Armá el programa</h2>
+      <p class="hint">Sumá instrucciones en orden para que el robot llegue a la taza ☕ y la agarre. Ojo con la casilla ⚠️.</p>
+
+      <div class="commands">
+        <button data-cmd="forward">⬆️ Avanzar</button>
+        <button data-cmd="turn">↻ Girar</button>
+        <button data-cmd="grab">✋ Agarrar</button>
+      </div>
+
+      <p class="queue-label">Tu programa:</p>
+      <div class="queue" id="queue"></div>
+
+      <div class="actions">
+        <button class="primary" id="runBtn">▶ Ejecutar</button>
+        <button class="ghost" id="resetBtn">↺ Reiniciar</button>
+      </div>
+
+      <div class="status idle" id="status">Armá tu secuencia y tocá "Ejecutar" para ver qué hace el robot.</div>
+    </div>
+  </div>
+
+  <footer>Así funciona programar: instrucciones precisas, en el orden correcto. Si algo sale mal, no es magia — es un paso que falta o está de más.</footer>
+</div>
+
+<script>
+(function(){
+  const ROWS = 3, COLS = 4;
+  const START = {row: 2, col: 0};
+  const GOAL = {row: 0, col: 3};
+  const WALL = {row: 1, col: 2};
+  const DIRS = ['up','right','down','left'];
+
+  const boardEl = document.getElementById('board');
+  const queueEl = document.getElementById('queue');
+  const statusEl = document.getElementById('status');
+  const runBtn = document.getElementById('runBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let program = []; // {type, id}
+  let idCounter = 0;
+  let running = false;
+  let cells = [];
+
+  function buildBoard(){
+    boardEl.innerHTML = '';
+    cells = [];
+    for(let r=0;r<ROWS;r++){
+      cells.push([]);
+      for(let c=0;c<COLS;c++){
+        const div = document.createElement('div');
+        div.className = 'cell';
+        if(r===WALL.row && c===WALL.col) div.classList.add('wall');
+        if(r===GOAL.row && c===GOAL.col) div.classList.add('goal');
+        boardEl.appendChild(div);
+        cells[r].push(div);
+      }
+    }
+    placeRobot(START.row, START.col, 'up');
+  }
+
+  let robotEl = null;
+  function placeRobot(row, col, facing){
+    document.querySelectorAll('.cell').forEach(c=>c.classList.remove('active-robot'));
+    const cell = cells[row][col];
+    cell.classList.add('active-robot');
+    if(!robotEl){
+      robotEl = document.createElement('span');
+      robotEl.className = 'robot facing-up';
+      robotEl.textContent = '🤖';
+    }
+    robotEl.className = 'robot facing-' + facing;
+    // only show goal cup icon if robot not covering it via ::after; robot appended into cell
+    cell.innerHTML = '';
+    cell.appendChild(robotEl);
+    if(row===GOAL.row && col===GOAL.col){
+      cell.classList.add('goal');
+    }
+  }
+
+  function clearRobotFromCells(){
+    document.querySelectorAll('.cell').forEach(c=>{
+      c.classList.remove('active-robot');
+      if(c.classList.contains('goal') || (c===cells[WALL.row][WALL.col])){
+        // leave decorative ::after pseudo-elements, just clear injected robot span
+      }
+      if(c.contains(robotEl)) c.removeChild(robotEl);
+    });
+  }
+
+  function renderQueue(){
+    queueEl.innerHTML = '';
+    program.forEach((item, idx) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.dataset.idx = idx;
+      const label = item.type === 'forward' ? '⬆️ Avanzar' : item.type === 'turn' ? '↻ Girar' : '✋ Agarrar';
+      chip.innerHTML = label + ' ';
+      const del = document.createElement('button');
+      del.textContent = '×';
+      del.title = 'Quitar';
+      del.addEventListener('click', () => {
+        if(running) return;
+        program = program.filter(p => p.id !== item.id);
+        renderQueue();
+      });
+      chip.appendChild(del);
+      queueEl.appendChild(chip);
+    });
+  }
+
+  function setStatus(text, kind){
+    statusEl.className = 'status ' + kind;
+    statusEl.textContent = text;
+  }
+
+  document.querySelectorAll('.commands button').forEach(btn=>{
+    btn.addEventListener('click', () => {
+      if(running) return;
+      program.push({type: btn.dataset.cmd, id: idCounter++});
+      renderQueue();
+      setStatus('Programa listo para ejecutar (o seguí agregando pasos).', 'idle');
+    });
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if(running) return;
+    program = [];
+    renderQueue();
+    buildBoard();
+    setStatus('Armá tu secuencia y tocá "Ejecutar" para ver qué hace el robot.', 'idle');
+  });
+
+  function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
+
+  async function run(){
+    if(running || program.length === 0) return;
+    running = true;
+    runBtn.disabled = true;
+    resetBtn.disabled = true;
+    buildBoard();
+
+    let row = START.row, col = START.col, facingIdx = 0;
+    let grabbed = false;
+
+    for(let i=0;i<program.length;i++){
+      document.querySelectorAll('.chip').forEach(c=>c.classList.remove('current'));
+      const chipEl = queueEl.children[i];
+      if(chipEl) chipEl.classList.add('current');
+      const step = program[i];
+
+      if(step.type === 'turn'){
+        facingIdx = (facingIdx + 1) % 4;
+        placeRobot(row, col, DIRS[facingIdx]);
+        setStatus(`Paso ${i+1}: gira y ahora mira hacia "${DIRS[facingIdx]}".`, 'running');
+      } else if(step.type === 'forward'){
+        const dir = DIRS[facingIdx];
+        let nr = row, nc = col;
+        if(dir==='up') nr--;
+        if(dir==='down') nr++;
+        if(dir==='left') nc--;
+        if(dir==='right') nc++;
+
+        if(nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS){
+          setStatus('💥 ¡Uy! El robot se salió del tablero. Hizo EXACTAMENTE lo que le dijiste, ni más ni menos: eso es programar. Ajustá cuántas veces avanza.', 'fail');
+          finish(); return;
+        }
+        if(nr === WALL.row && nc === WALL.col){
+          setStatus('💥 ¡Choque! Pisó la casilla marcada con ⚠️. Revisá el orden de tu secuencia.', 'fail');
+          finish(); return;
+        }
+        row = nr; col = nc;
+        placeRobot(row, col, DIRS[facingIdx]);
+        setStatus(`Paso ${i+1}: avanza a la casilla (${row+1}, ${col+1}).`, 'running');
+      } else if(step.type === 'grab'){
+        if(row === GOAL.row && col === GOAL.col){
+          grabbed = true;
+          setStatus(`Paso ${i+1}: agarra la taza. ☕`, 'running');
+        } else {
+          setStatus(`Paso ${i+1}: intenta agarrar, pero ahí no hay nada.`, 'running');
+        }
+      }
+      await sleep(650);
+    }
+
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('current'));
+
+    if(grabbed){
+      setStatus('🎉 ¡Programa exitoso! Le diste instrucciones precisas y en el orden correcto, y la computadora resolvió el problema. Eso es programar.', 'success');
+    } else if(row === GOAL.row && col === GOAL.col){
+      setStatus('🤔 Llegaste hasta la taza pero faltó la instrucción "Agarrar". En programación, un paso que falta cambia todo el resultado.', 'fail');
+    } else {
+      setStatus('🤖 El robot terminó su lista de instrucciones pero no llegó a la taza. Ajustá la secuencia y probá de nuevo — así se depura un programa.', 'fail');
+    }
+    finish();
+
+    function finish(){
+      running = false;
+      runBtn.disabled = false;
+      resetBtn.disabled = false;
+    }
+  }
+
+  runBtn.addEventListener('click', run);
+
+  buildBoard();
+})();
+</script>
+</body>
+</html>
